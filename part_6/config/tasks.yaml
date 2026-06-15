@@ -1,0 +1,40 @@
+# Per-task model pools and sampling settings.
+#
+# The first model in each list is the primary; the rest are fallbacks that the
+# litellm Router tries in order when an earlier model fails. Adding a new task
+# is just a new entry here - no code change needed.
+
+max_output_tokens: 2048
+
+tasks:
+  precise:
+    temperature: 0.0
+    models:
+      - google/gemma-3-12b-it
+      - google/gemini-3.5-flash
+
+  creative:
+    temperature: 1.1
+    models:
+      - google/gemma-3-12b-it
+      - google/gemma-4-26b-a4b-it:free
+
+  # Intent recognition must be deterministic: temperature 0 so the same
+  # question always maps to the same intent.
+  intent:
+    temperature: 0.0
+    models:
+      - google/gemma-3-12b-it
+      - google/gemini-3.5-flash
+
+  sql_gen:
+    temperature: 0.0
+    models:
+      - google/gemma-3-12b-it
+      - google/gemini-3.5-flash
+
+  answer:
+    temperature: 0.2
+    models:
+      - google/gemma-3-12b-it
+      - google/gemini-3.5-flash

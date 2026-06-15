@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Northwind Agent - Agentic RAG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient-start: #0f172a;
+            --bg-gradient-end: #1e293b;
+            --surface: rgba(30, 41, 59, 0.7);
+            --surface-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --user-msg-bg: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --agent-msg-bg: rgba(51, 65, 85, 0.8);
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning-bg: rgba(245, 158, 11, 0.15);
+            --warning-border: rgba(245, 158, 11, 0.3);
+            --warning-text: #fbbf24;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif;
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            background-attachment: fixed;
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+        
+        h1 {
+            margin: 0 0 12px 0;
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .session-info { 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 0.95em; 
+            color: var(--text-muted); 
+        }
+
+        .session-info input {
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            width: 250px;
+            font-size: 0.9em;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            font-family: monospace;
+        }
+
+        .session-info input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .chat-container { 
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 30px; 
+            border-radius: 20px; 
+            border: 1px solid var(--surface-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            height: 55vh; 
+            overflow-y: auto; 
+            margin-bottom: 24px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            scroll-behavior: smooth;
+        }
+
+        .message { 
+            padding: 16px 20px; 
+            border-radius: 20px; 
+            max-width: 75%; 
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 0.95rem;
+        }
+
+        .user { 
+            align-self: flex-end; 
+            background: var(--user-msg-bg); 
+            color: white; 
+            border-bottom-right-radius: 4px; 
+        }
+
+        .agent { 
+            align-self: flex-start; 
+            background: var(--agent-msg-bg); 
+            color: var(--text-main); 
+            border: 1px solid var(--surface-border);
+            border-bottom-left-radius: 4px; 
+        }
+
+        .message.thinking {
+            align-self: flex-start;
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--text-muted);
+            border: 1px dashed rgba(99, 102, 241, 0.45);
+            border-bottom-left-radius: 4px;
+            font-size: 0.9rem;
+            max-width: 85%;
+        }
+
+        .message.thinking::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 8px;
+            border: 2px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: -2px;
+        }
+
+        .message.thinking.status-log::before {
+            display: none;
+        }
+
+        .input-group {
+            display: flex; 
+            gap: 16px; 
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid var(--surface-border);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .input-group input[type="text"] { 
+            flex-grow: 1; 
+            padding: 16px 24px; 
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--surface-border); 
+            border-radius: 12px; 
+            font-size: 1rem;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .input-group input[type="text"]::placeholder {
+            color: rgba(148, 163, 184, 0.6);
+        }
+
+        .input-group input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        button { 
+            padding: 16px 32px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+        }
+
+        button:hover:not(:disabled) { 
+            background: var(--primary-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(99, 102, 241, 0.5);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #475569;
+            color: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .review-panel { 
+            background: var(--warning-bg); 
+            color: var(--warning-text); 
+            padding: 24px; 
+            border-radius: 16px; 
+            border: 1px solid var(--warning-border); 
+            backdrop-filter: blur(12px);
+            display: none; 
+            margin-bottom: 24px;
+            animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .review-panel h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .review-panel p {
+            margin: 0;
+            color: rgba(251, 191, 36, 0.9);
+            font-size: 0.95rem;
+        }
+
+        .review-actions {
+            display: flex; 
+            gap: 16px;
+            margin-top: 20px;
+            align-items: center;
+        }
+
+        .btn-approve { 
+            background: var(--success); 
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        }
+        .btn-approve:hover:not(:disabled) { 
+            background: var(--success-hover); 
+            box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-reject { 
+            background: var(--danger); 
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+        }
+        .btn-reject:hover:not(:disabled) { 
+            background: var(--danger-hover); 
+            box-shadow: 0 6px 8px -1px rgba(239, 68, 68, 0.4);
+        }
+        
+        .review-actions input {
+            flex-grow: 1;
+            padding: 14px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--warning-border);
+            border-radius: 10px;
+            outline: none;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .review-actions input:focus {
+            border-color: var(--warning-text);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+        
+        .review-actions input::placeholder {
+            color: rgba(251, 191, 36, 0.5);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Northwind Agent</h1>
+        <div class="session-info">
+            <label for="sessionId">Session ID:</label>
+            <input type="text" id="sessionId" value="">
+        </div>
+    </div>
+
+    <div class="chat-container" id="chatBox">
+        <div class="message agent">Hello! I can answer questions about the Northwind database or our HR policy documents. How can I help you today?</div>
+    </div>
+
+    <div class="review-panel" id="reviewPanel">
+        <h3>⚡ Human Review Required</h3>
+        <p>The agent has paused execution because it wants to run a sensitive tool or query. Please approve to continue, or provide feedback/corrections to steer it.</p>
+        
+        <div class="review-actions" id="reviewDefaultActions">
+            <button class="btn-approve" onclick="resumeChat(true)">Approve & Continue</button>
+            <button class="btn-reject" onclick="showFeedbackInput()" style="background: rgba(245, 158, 11, 0.2); color: var(--warning-text); border: 1px solid var(--warning-border); box-shadow: none;">Provide Feedback</button>
+        </div>
+
+        <div class="review-actions hidden" id="reviewFeedbackActions">
+            <input type="text" id="feedbackInput" placeholder="Tell the agent what to do instead..." onkeypress="if(event.key === 'Enter') resumeChat(false)">
+            <button class="btn-reject" onclick="resumeChat(false)">Send</button>
+            <button style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted); border: none; border-radius: 12px; font-weight: 600; padding: 14px 20px; cursor: pointer;" onclick="hideFeedbackInput()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="input-group" id="inputGroup">
+        <input type="text" id="messageInput" placeholder="E.g., What is the average order value? or What is the employee vacation policy?" onkeypress="handleKeyPress(event)">
+        <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        document.getElementById('sessionId').value = 'session-' + Math.random().toString(36).substring(2, 9);
+        const apiUrl = 'http://localhost:8000';
+
+        let thinkingEl = null;
+        let statusInterval = null;
+        let pendingReviewAnswer = null;
+
+        const LOADING_STATUS_MESSAGES = [
+            'Classifying your question...',
+            'Selecting the best data source...',
+            'Retrieving relevant data...',
+            'Composing the answer...',
+        ];
+
+        function startStatusRotation() {
+            let index = 0;
+            ensureThinkingBubble(LOADING_STATUS_MESSAGES[index]);
+            statusInterval = setInterval(() => {
+                index = (index + 1) % LOADING_STATUS_MESSAGES.length;
+                ensureThinkingBubble(LOADING_STATUS_MESSAGES[index]);
+            }, 2500);
+        }
+
+        function stopStatusRotation() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
+        }
+
+        function handleChatResponse(data, { fromResume = false } = {}) {
+            stopStatusRotation();
+            removeThinkingBubble();
+
+            if (fromResume && pendingReviewAnswer && data.answer === pendingReviewAnswer && !data.paused_for_review) {
+                pendingReviewAnswer = null;
+                return;
+            }
+
+            if (data.paused_for_review) {
+                if (data.answer) {
+                    appendMessage('agent', data.answer);
+                    pendingReviewAnswer = data.answer;
+                }
+                showReviewPanel();
+                return;
+            }
+
+            if (data.answer) {
+                appendMessage('agent', data.answer);
+            }
+            pendingReviewAnswer = null;
+        }
+
+        function appendMessage(sender, text) {
+            const chatBox = document.getElementById('chatBox');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.textContent = text;
+            chatBox.appendChild(msgDiv);
+            scrollToBottom();
+            return msgDiv;
+        }
+
+        function scrollToBottom() {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function ensureThinkingBubble(message) {
+            if (!thinkingEl) {
+                thinkingEl = document.createElement('div');
+                thinkingEl.className = 'message thinking';
+                document.getElementById('chatBox').appendChild(thinkingEl);
+            }
+            thinkingEl.textContent = message;
+            scrollToBottom();
+        }
+
+        function removeThinkingBubble() {
+            if (thinkingEl) {
+                thinkingEl.remove();
+                thinkingEl = null;
+            }
+        }
+
+        function showReviewPanel() {
+            document.getElementById('reviewPanel').style.display = 'block';
+            document.getElementById('inputGroup').style.display = 'none';
+            scrollToBottom();
+        }
+
+        function hideReviewPanel() {
+            document.getElementById('reviewPanel').style.display = 'none';
+            document.getElementById('inputGroup').style.display = 'flex';
+        }
+
+        function showFeedbackInput() {
+            document.getElementById('reviewDefaultActions').classList.add('hidden');
+            document.getElementById('reviewFeedbackActions').classList.remove('hidden');
+            document.getElementById('feedbackInput').focus();
+        }
+
+        function hideFeedbackInput() {
+            document.getElementById('reviewDefaultActions').classList.remove('hidden');
+            document.getElementById('reviewFeedbackActions').classList.add('hidden');
+            document.getElementById('feedbackInput').value = '';
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const sessionId = document.getElementById('sessionId').value;
+            appendMessage('user', text);
+            input.value = '';
+
+            setLoading(true);
+
+            try {
+                const response = await fetch(`${apiUrl}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, question: text })
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                handleChatResponse(await response.json());
+            } catch (error) {
+                removeThinkingBubble();
+                appendMessage('agent', `Error connecting to API: ${error.message}`);
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function resumeChat(approved) {
+            const sessionId = document.getElementById('sessionId').value;
+            const feedback = document.getElementById('feedbackInput').value;
+
+            hideReviewPanel();
+            hideFeedbackInput();
+
+            if (!approved && feedback.trim()) {
+                appendMessage('user', feedback);
+            }
+
+            setLoading(true);
+
+            try {
+                const response = await fetch(`${apiUrl}/chat/resume`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        approved: approved,
+                        feedback: approved ? null : feedback
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                handleChatResponse(await response.json(), { fromResume: true });
+                document.getElementById('feedbackInput').value = '';
+            } catch (error) {
+                removeThinkingBubble();
+                appendMessage('agent', `Error connecting to API: ${error.message}`);
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !document.getElementById('sendBtn').disabled) {
+                sendMessage();
+            }
+        }
+
+        function setLoading(isLoading) {
+            const btn = document.getElementById('sendBtn');
+            const input = document.getElementById('messageInput');
+
+            btn.disabled = isLoading;
+            input.disabled = isLoading;
+
+            if (isLoading) {
+                startStatusRotation();
+            } else {
+                stopStatusRotation();
+                removeThinkingBubble();
+                input.focus();
+            }
+        }
+    </script>
+</body>
+</html>
