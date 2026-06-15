@@ -19,8 +19,16 @@ dependencies = [
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-v"
+norecursedirs = ["repo_name"] # add this if cloning reference repo
 
 [dependency-groups]
 dev = [
     "ruff>=0.15.15",
 ]
+
+[tool.uv.workspace]
+members = ["."]
+exclude = ["repo_name"] # add this if cloning reference repo
+
+[tool.ruff]
+extend-exclude = ["repo_name"] # add this if cloning reference repo
