@@ -1,0 +1,18 @@
+[project]
+name = "workshop-db-setup"
+version = "0.1.0"
+description = "Database setup pipelines for the AI Advanced Agent workshop (Supabase + RAG)."
+requires-python = ">=3.10"
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "supabase>=2.4.0",
+    "openai>=1.30.0",
+    "pypdf>=4.2.0",
+]
+
+# Optional: only needed for the alternative Kaggle-based RAG ingest (pipelines/ingest.py).
+# Install with:  uv sync --extra kaggle
+[project.optional-dependencies]
+kaggle = [
+    "kagglehub>=0.2.0",
+]
