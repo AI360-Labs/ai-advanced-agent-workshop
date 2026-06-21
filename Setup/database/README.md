@@ -82,8 +82,6 @@ SUPABASE_SERVICE_KEY=sb_secret_...
 OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
-The Kaggle variables are optional — leave them blank unless you plan to run the alternative Kaggle RAG ingest (`pipelines/ingest.py`).
-
 ---
 
 ## 5. Expose custom schemas in the Data API

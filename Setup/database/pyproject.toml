@@ -9,10 +9,3 @@ dependencies = [
     "openai>=1.30.0",
     "pypdf>=4.2.0",
 ]
-
-# Optional: only needed for the alternative Kaggle-based RAG ingest (pipelines/ingest.py).
-# Install with:  uv sync --extra kaggle
-[project.optional-dependencies]
-kaggle = [
-    "kagglehub>=0.2.0",
-]
