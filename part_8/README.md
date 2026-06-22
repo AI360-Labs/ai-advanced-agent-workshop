@@ -1,15 +1,31 @@
-# agentic-rag — Part 8: FastAPI Service
+# Part 8 — FastAPI service: chat & resume endpoints
 
-Builds on Part 7. Wraps the LangGraph agent in a FastAPI REST API with three chat endpoints
-and interactive Swagger documentation at `/docs`.
+Builds on Part 7. We wrap the LangGraph **agent** in a **FastAPI** REST API: typed
+request/response **schemas**, a cached compiled-graph **dependency**, chat endpoints, and
+interactive Swagger documentation at `/docs`.
 
-| New file | Purpose |
-|----------|---------|
-| `api/schemas.py` | Pydantic request/response models (`ChatRequest`, `ChatResponse`, `ResumeRequest`) |
-| `api/deps.py` | Compiles and caches the graph as a singleton |
-| `api/app.py` | FastAPI app with all endpoints |
+## Roadmap
 
-### Endpoints
+1. Define request/response **schemas** (`ChatRequest`, `ChatResponse`, `ResumeRequest`)
+2. Compile and cache the graph once as a **singleton dependency**
+3. Expose the agent over **HTTP** endpoints (health, chat, resume)
+4. Browse and try it live through **Swagger** at `/docs`
+5. Tests: unit tests for the API schemas
+
+## Layout (added to Part 7)
+
+```text
+part_8/
+├── api/
+│   ├── __init__.py
+│   ├── schemas.py          # ChatRequest, ChatResponse, ResumeRequest
+│   ├── deps.py             # compiles and caches the graph as a singleton
+│   └── app.py              # FastAPI app with all endpoints
+└── tests/
+    └── unit/test_api_schemas.py
+```
+
+## Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
