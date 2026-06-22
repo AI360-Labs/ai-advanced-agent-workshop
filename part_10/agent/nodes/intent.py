@@ -9,7 +9,7 @@ INTENT_PROMPT = load_prompt("intent_recognition")
 client = LLMClient(task="intent")
 
 
-async def recognize_intent(state: AgentState) -> StateUpdate:
+async def arecognize_intent(state: AgentState) -> StateUpdate:
     """Returns a partial state update; LangGraph merges it into the graph state."""
     result = await client.astructured(
         INTENT_PROMPT, {"question": state["question"]}, IntentResult
