@@ -1,27 +1,47 @@
-# agentic-rag — Part 1: Foundation
+# Part 1 — Foundation: config, logger & LLM client
 
-Welcome 👋 This is the **starting point for the workshop**. You'll fork this folder into your
-own repo and build the agentic RAG system on top of it, part by part. Part 1 is the
-foundation everything else depends on: typed configuration, one shared logger, and an async
-LLM client with automatic model fallback.
-
-By the end of this part you'll be able to run `main.py` and watch a real LLM call return a
-poem and a validated, structured summary — proof that your config, secrets, and model client
-are all wired up correctly.
-
-## What's in this part
-
-| File | Purpose |
-|------|---------|
-| `config/settings.py` | Reads secrets from `settings/.env.{APP_ENV}` via `pydantic-settings` |
-| `config/tasks.yaml` | Model pool and temperature per task (no secrets, version-controlled) |
-| `utils/logger.py` | Single shared logger — reads `LOG_LEVEL` from config |
-| `utils/llm_client.py` | `LLMClient` — task-scoped wrapper over `litellm.Router` via OpenRouter |
-| `main.py` | A runnable example that ties it all together |
+The **starting point for the workshop**. You'll fork this folder into your own repo and build
+the agentic RAG system on top of it, part by part. Part 1 is the foundation everything else
+depends on: a typed **configuration** (secrets vs behaviour), one shared **logger**, and an
+async **LLM client** with automatic model fallback. By the end you can run `main.py` and watch
+a real LLM call return a poem and a validated, structured summary — proof that your config,
+secrets, and model client are all wired up correctly.
 
 The key idea: **secrets** (your API key) live in gitignored `.env` files, while **behaviour**
 (which models each task uses, at what temperature) lives in a committed `config/tasks.yaml`.
 One LLM client, configured per task, with provider fallback for free.
+
+## Roadmap
+
+1. Read **secrets** from `settings/.env.{APP_ENV}` with `pydantic-settings`
+2. Read **behaviour** (model pool + temperature per task) from `config/tasks.yaml`
+3. Set up one shared **logger** driven by `LOG_LEVEL`
+4. Build the **`LLMClient`** — a task-scoped wrapper over `litellm.Router` via OpenRouter
+5. Tie it together in `main.py`: a creative poem + a precise, structured summary
+6. Tests: offline unit tests for config, logger, and the client
+
+## Layout
+
+```text
+part_1/
+├── config/
+│   ├── __init__.py
+│   ├── settings.py         # secrets from settings/.env.{APP_ENV} (pydantic-settings)
+│   └── tasks.yaml          # model pool + temperature per task (committed, no secrets)
+├── utils/
+│   ├── __init__.py
+│   ├── logger.py           # single shared logger, reads LOG_LEVEL
+│   └── llm_client.py       # LLMClient — task-scoped litellm.Router over OpenRouter
+├── explanation_materials/
+│   └── 00_pydantic.ipynb   # TypedDict vs Pydantic
+├── main.py                 # runnable example: poem + ServerSummary
+└── tests/
+    └── unit/
+        ├── test_config.py
+        ├── test_llm_client.py
+        ├── test_logger.py
+        └── test_utils_init.py
+```
 
 ## Requirements
 
